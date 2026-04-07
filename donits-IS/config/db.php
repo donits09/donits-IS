@@ -18,13 +18,7 @@ $isLocal = ($server === 'localhost' || $server === '127.0.0.1');
 |--------------------------------------------------------------------------
 */
 
-if ($isLocal) {
-
-    // LOCALHOST DATABASE TO HA
-    if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
-    if (!defined('DB_NAME')) define('DB_NAME', 'inventory_system');
-    if (!defined('DB_USER')) define('DB_USER', 'root');
-    if (!defined('DB_PASS')) define('DB_PASS', '');
+$defaultDbHost = $isLocal ? '127.0.0.1' : 'localhost';
 
 } else {
     if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
