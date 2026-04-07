@@ -57,3 +57,43 @@ function redirect(string $path): void
     header('Location: ' . app_url($path));
     exit;
 }
+
+function format_currency(float $value): string
+{
+    return '$' . number_format($value, 2);
+}
+
+function calculate_markup_percent(float $costPrice, float $salePrice): float
+{
+    if ($costPrice <= 0) {
+        return 0;
+    }
+
+    return (($salePrice - $costPrice) / $costPrice) * 100;
+}
+
+function stock_health_label(int $remaining): string
+{
+    if ($remaining <= 0) {
+        return 'Out of stock';
+    }
+
+    if ($remaining <= 5) {
+        return 'Low stock';
+    }
+
+    return 'Healthy';
+}
+
+function stock_health_badge_class(int $remaining): string
+{
+    if ($remaining <= 0) {
+        return 'danger';
+    }
+
+    if ($remaining <= 5) {
+        return 'warning';
+    }
+
+    return 'success';
+}

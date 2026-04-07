@@ -44,17 +44,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
-<h3>Edit Item</h3>
-<form method="POST" class="row g-3">
-    <div class="col-md-6"><label class="form-label">Item Name</label><input class="form-control" name="item_name" value="<?= e($item['item_name']) ?>" required></div>
-    <div class="col-md-3"><label class="form-label">Price</label><input class="form-control" name="price" type="number" step="0.01" min="0" value="<?= e((string) $item['price']) ?>" required></div>
-    <div class="col-md-3"><label class="form-label">Sale Price</label><input class="form-control" name="sale_price" type="number" step="0.01" min="0" value="<?= e((string) $item['sale_price']) ?>" required></div>
-    <div class="col-md-3"><label class="form-label">Total Items</label><input class="form-control" name="total_items" type="number" min="0" value="<?= (int) $item['total_items'] ?>" required></div>
-    <div class="col-md-3"><label class="form-label">Remaining</label><input class="form-control" name="remaining" type="number" min="0" value="<?= (int) $item['remaining'] ?>" required></div>
-    <div class="col-12">
-        <button class="btn btn-primary">Update</button>
-        <a href="<?= e(app_url('modules/items/index.php')) ?>" class="btn btn-secondary">Cancel</a>
+<div class="card app-card mx-auto" style="max-width: 950px;">
+    <div class="card-body p-4">
+        <h3 class="section-title mb-3"><i class="bi bi-pencil-square me-2"></i>Edit Item</h3>
+        <form method="POST" class="row g-3">
+            <div class="col-md-6"><label class="form-label">Item Name</label><input class="form-control" name="item_name" value="<?= e($item['item_name']) ?>" required></div>
+            <div class="col-md-3"><label class="form-label">Price</label><input class="form-control" name="price" type="number" step="0.01" min="0" value="<?= e((string) $item['price']) ?>" required></div>
+            <div class="col-md-3"><label class="form-label">Sale Price</label><input class="form-control" name="sale_price" type="number" step="0.01" min="0" value="<?= e((string) $item['sale_price']) ?>" required></div>
+            <div class="col-md-6"><label class="form-label">Total Items</label><input class="form-control" name="total_items" type="number" min="0" value="<?= (int) $item['total_items'] ?>" required></div>
+            <div class="col-md-6"><label class="form-label">Remaining</label><input class="form-control" name="remaining" type="number" min="0" value="<?= (int) $item['remaining'] ?>" required></div>
+            <div class="col-12 d-flex gap-2">
+                <button class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Update</button>
+                <a href="<?= e(app_url('modules/items/index.php')) ?>" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
     </div>
-</form>
+</div>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
