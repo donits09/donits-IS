@@ -60,7 +60,7 @@ function redirect(string $path): void
 
 function format_currency(float $value): string
 {
-    return '$' . number_format($value, 2);
+    return '₱' . number_format($value, 2);
 }
 
 function calculate_markup_percent(float $costPrice, float $salePrice): float
