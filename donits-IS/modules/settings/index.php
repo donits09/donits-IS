@@ -1,6 +1,14 @@
 <?php
 require_once __DIR__ . '/../../config/db.php';
 
+function sync_current_capital(PDO $pdo): void
+{
+    $capital = (float) get_setting($pdo, 'capital', '0');
+    $totalExpenses = (float) $pdo->query('SELECT COALESCE(SUM(amount), 0) FROM capital_expenses')->fetchColumn();
+    $currentCapital = max(0, $capital - $totalExpenses);
+    set_setting($pdo, 'current_capital', (string) $currentCapital);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -15,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'add_expense') {
         $expenseAmount = max(0, (float) ($_POST['expense_amount'] ?? 0));
         $expenseNote = trim($_POST['expense_note'] ?? 'Manual expense');
-        $currentCapital = (float) get_setting($pdo, 'current_capital', '0');
 
         if ($expenseAmount <= 0) {
             set_flash('danger', 'Expense amount must be greater than zero.');
@@ -30,12 +37,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'note' => $expenseNote,
             ]);
 
-            set_setting($pdo, 'current_capital', (string) max(0, $currentCapital - $expenseAmount));
+            sync_current_capital($pdo);
             $pdo->commit();
             set_flash('success', 'Expense recorded and deducted from capital.');
         } catch (Throwable $e) {
             $pdo->rollBack();
             set_flash('danger', 'Unable to save expense.');
+        }
+
+        redirect('modules/settings/index.php');
+    }
+
+    if ($action === 'edit_expense') {
+        $expenseId = (int) ($_POST['expense_id'] ?? 0);
+        $expenseAmount = max(0, (float) ($_POST['expense_amount'] ?? 0));
+        $expenseNote = trim($_POST['expense_note'] ?? 'Manual expense');
+
+        if ($expenseId <= 0 || $expenseAmount <= 0) {
+            set_flash('danger', 'Invalid expense update.');
+            redirect('modules/settings/index.php');
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $updateStmt = $pdo->prepare(
+                'UPDATE capital_expenses
+                 SET amount = :amount, note = :note
+                 WHERE id = :id'
+            );
+            $updateStmt->execute([
+                'id' => $expenseId,
+                'amount' => $expenseAmount,
+                'note' => $expenseNote,
+            ]);
+
+            sync_current_capital($pdo);
+            $pdo->commit();
+            set_flash('success', 'Expense updated successfully.');
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            set_flash('danger', 'Unable to update expense.');
+        }
+
+        redirect('modules/settings/index.php');
+    }
+
+    if ($action === 'delete_expense') {
+        $expenseId = (int) ($_POST['expense_id'] ?? 0);
+
+        if ($expenseId <= 0) {
+            set_flash('danger', 'Invalid expense selected.');
+            redirect('modules/settings/index.php');
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $deleteStmt = $pdo->prepare('DELETE FROM capital_expenses WHERE id = :id');
+            $deleteStmt->execute(['id' => $expenseId]);
+
+            sync_current_capital($pdo);
+            $pdo->commit();
+            set_flash('success', 'Expense deleted successfully.');
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            set_flash('danger', 'Unable to delete expense.');
         }
 
         redirect('modules/settings/index.php');
@@ -189,17 +254,36 @@ require_once __DIR__ . '/../../includes/header.php';
                         <th>Date</th>
                         <th>Amount</th>
                         <th>Note</th>
+                        <th style="width: 220px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!$expenseRows): ?>
-                        <tr><td colspan="3" class="text-center">No expenses yet.</td></tr>
+                        <tr><td colspan="4" class="text-center">No expenses yet.</td></tr>
                     <?php else: ?>
                         <?php foreach ($expenseRows as $expense): ?>
                             <tr>
                                 <td><?= e($expense['created_at']) ?></td>
-                                <td><?= e(format_currency((float) $expense['amount'])) ?></td>
-                                <td><?= e($expense['note'] ?? '') ?></td>
+                                <td>
+                                    <form method="POST" class="d-flex gap-2 align-items-center">
+                                        <input type="hidden" name="action" value="edit_expense">
+                                        <input type="hidden" name="expense_id" value="<?= (int) $expense['id'] ?>">
+                                        <input type="number" class="form-control form-control-sm" name="expense_amount" min="0.01" step="0.01" value="<?= e((string) $expense['amount']) ?>" required>
+                                </td>
+                                <td>
+                                        <input type="text" class="form-control form-control-sm" name="expense_note" value="<?= e($expense['note'] ?? '') ?>" placeholder="Note">
+                                </td>
+                                <td>
+                                        <div class="d-flex gap-2">
+                                            <button class="btn btn-sm btn-outline-primary" type="submit">Save</button>
+                                    </form>
+                                            <form method="POST" onsubmit="return confirm('Delete this expense record?');">
+                                                <input type="hidden" name="action" value="delete_expense">
+                                                <input type="hidden" name="expense_id" value="<?= (int) $expense['id'] ?>">
+                                                <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                                            </form>
+                                        </div>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
