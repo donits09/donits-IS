@@ -82,6 +82,26 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS settings (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            setting_key VARCHAR(120) NOT NULL UNIQUE,
+            setting_value TEXT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS capital_expenses (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            amount DECIMAL(12,2) NOT NULL,
+            note VARCHAR(255) DEFAULT NULL,
+            item_id INT UNSIGNED DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_created_at (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
 } catch (PDOException $e) {
     die('Database connection failed: ' . $e->getMessage());
 }

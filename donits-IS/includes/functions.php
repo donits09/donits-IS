@@ -97,3 +97,25 @@ function stock_health_badge_class(int $remaining): string
 
     return 'success';
 }
+
+function get_setting(PDO $pdo, string $key, ?string $default = null): ?string
+{
+    $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = :setting_key LIMIT 1');
+    $stmt->execute(['setting_key' => $key]);
+    $value = $stmt->fetchColumn();
+
+    return $value === false ? $default : (string) $value;
+}
+
+function set_setting(PDO $pdo, string $key, string $value): void
+{
+    $stmt = $pdo->prepare(
+        'INSERT INTO settings (setting_key, setting_value)
+         VALUES (:setting_key, :setting_value)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = CURRENT_TIMESTAMP'
+    );
+    $stmt->execute([
+        'setting_key' => $key,
+        'setting_value' => $value,
+    ]);
+}
