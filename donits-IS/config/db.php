@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../includes/functions.php';
+
 if (!defined('APP_ENV')) {
     define('APP_ENV', getenv('APP_ENV') ?: 'development');
 }
@@ -20,8 +22,13 @@ $isLocal = ($server === 'localhost' || $server === '127.0.0.1');
 
 $defaultDbHost = $isLocal ? '127.0.0.1' : 'localhost';
 
+if ($isLocal) {
+    if (!defined('DB_HOST')) define('DB_HOST', $defaultDbHost);
+    if (!defined('DB_NAME')) define('DB_NAME', 'donits-IS');
+    if (!defined('DB_USER')) define('DB_USER', 'root');
+    if (!defined('DB_PASS')) define('DB_PASS', '');
 } else {
-    if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+    if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: $defaultDbHost);
     if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'inventory_system');
     if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'root');
     if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') ?: '');
