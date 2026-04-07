@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../includes/functions.php';
+
 // =========================
 // ENVIRONMENT
 // =========================
@@ -13,20 +15,44 @@ if (!defined('APP_ENV')) {
 $server = $_SERVER['SERVER_NAME'] ?? 'localhost';
 $isLocal = ($server === 'localhost' || $server === '127.0.0.1');
 
-if (!defined('DB_HOST')) define('DB_HOST', '127.0.0.1');
-if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'inventory_system');
-if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'root');
-if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') ?: '');
 
-// =========================
-// PATH CONFIG
-// =========================
-if (!defined('ROOT')) define('ROOT', '/inventory-system');
-if (!defined('BASE_URL')) define('BASE_URL', 'http://localhost/inventory-system');
+/*
+|--------------------------------------------------------------------------
+| DATABASE CONFIG...
+|--------------------------------------------------------------------------
+*/
 
-// =========================
-// ERROR HANDLING
-// =========================
+$defaultDbHost = $isLocal ? '127.0.0.1' : 'localhost';
+
+if ($isLocal) {
+    if (!defined('DB_HOST')) define('DB_HOST', $defaultDbHost);
+    if (!defined('DB_NAME')) define('DB_NAME', 'donits-IS');
+    if (!defined('DB_USER')) define('DB_USER', 'root');
+    if (!defined('DB_PASS')) define('DB_PASS', '');
+} else {
+    if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: $defaultDbHost);
+    if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'inventory_system');
+    if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'root');
+    if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') ?: '');
+}
+
+/*
+|--------------------------------------------------------------------------
+| BASE URL + ROOT
+|--------------------------------------------------------------------------
+*/
+
+if ($isLocal) {
+
+    if (!defined('ROOT')) define('ROOT', '/donits-IS');
+    if (!defined('BASE_URL')) define('BASE_URL', 'http://localhost/donits-IS');
+
+} else {
+    if (!defined('ROOT')) define('ROOT', getenv('ROOT') ?: '');
+    if (!defined('BASE_URL')) define('BASE_URL', getenv('BASE_URL') ?: '');
+}
+
+
 if (!defined('DISPLAY_ERROR')) {
     define('DISPLAY_ERROR', getenv('DISPLAY_ERROR') ?: '1');
 }
