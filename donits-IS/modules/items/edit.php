@@ -1,5 +1,5 @@
 <?php
-include '../../config/db.php';
+require_once __DIR__ . '/../../config/db.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 $stmt = $pdo->prepare('SELECT * FROM items WHERE id = :id');
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('modules/items/index.php');
 }
 
-include '../../includes/header.php';
+require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <h3>Edit Item</h3>
@@ -57,4 +57,4 @@ include '../../includes/header.php';
     </div>
 </form>
 
-<?php include '../../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>

@@ -1,5 +1,5 @@
 <?php
-include '../../config/db.php';
+require_once __DIR__ . '/../../config/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $itemName = trim($_POST['item_name'] ?? '');
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-include '../../includes/header.php';
+require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <h3>Add Item</h3>
@@ -44,4 +44,4 @@ include '../../includes/header.php';
     </div>
 </form>
 
-<?php include '../../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>

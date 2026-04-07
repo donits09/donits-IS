@@ -1,5 +1,5 @@
 <?php
-include '../../config/db.php';
+require_once __DIR__ . '/../../config/db.php';
 
 $items = $pdo->query('SELECT id, item_name, price, sale_price, remaining FROM items ORDER BY item_name ASC')->fetchAll();
 
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-include '../../includes/header.php';
+require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <h3>Add Sale</h3>
@@ -80,4 +80,4 @@ itemSelect?.addEventListener('change', function() {
 });
 </script>
 
-<?php include '../../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
