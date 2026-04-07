@@ -8,6 +8,10 @@ $totalStocks = (int) ($pdo->query('SELECT COALESCE(SUM(remaining), 0) FROM items
 $totalInventoryCost = (float) ($pdo->query('SELECT COALESCE(SUM(price * remaining), 0) FROM items')->fetchColumn());
 $lowStockItems = (int) ($pdo->query('SELECT COUNT(*) FROM items WHERE remaining BETWEEN 1 AND 5')->fetchColumn());
 
+$initialCapital = (float) get_setting($pdo, 'capital', '0');
+$currentCapital = (float) get_setting($pdo, 'current_capital', '0');
+$totalExpenses = (float) ($pdo->query('SELECT COALESCE(SUM(amount), 0) FROM capital_expenses')->fetchColumn());
+
 $salesByDayStmt = $pdo->query(
     'SELECT DATE(created_at) AS sale_date, COALESCE(SUM(total_amount), 0) AS amount
      FROM sales
@@ -47,6 +51,13 @@ include 'includes/header.php';
             </div>
         </div>
     </div>
+</div>
+
+
+<div class="row g-3 mb-3">
+    <div class="col-md-4"><div class="card app-card h-100"><div class="card-body"><p class="text-secondary mb-2"><i class="bi bi-wallet2 me-1"></i>Initial Capital</p><h4 class="mb-0"><?= e(format_currency($initialCapital)) ?></h4></div></div></div>
+    <div class="col-md-4"><div class="card app-card h-100"><div class="card-body"><p class="text-secondary mb-2"><i class="bi bi-cash-stack me-1"></i>Current Capital</p><h4 class="mb-0"><?= e(format_currency($currentCapital)) ?></h4></div></div></div>
+    <div class="col-md-4"><div class="card app-card h-100"><div class="card-body"><p class="text-secondary mb-2"><i class="bi bi-credit-card me-1"></i>Tracked Expenses</p><h4 class="mb-0"><?= e(format_currency($totalExpenses)) ?></h4></div></div></div>
 </div>
 
 <div class="card app-card">

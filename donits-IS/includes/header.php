@@ -2,6 +2,23 @@
 require_once __DIR__ . '/functions.php';
 
 $flash = get_flash();
+$showAuditAlert = false;
+$auditScheduleText = '';
+
+if (isset($pdo) && $pdo instanceof PDO) {
+    $auditEnabled = get_setting($pdo, 'audit_enabled', '0') === '1';
+    $auditSnoozeUntil = get_setting($pdo, 'audit_snooze_until');
+    $auditNextAt = get_setting($pdo, 'audit_next_at');
+
+    $nowTs = time();
+    $snoozeTs = $auditSnoozeUntil ? strtotime($auditSnoozeUntil) : false;
+    $nextTs = $auditNextAt ? strtotime($auditNextAt) : false;
+
+    if ($auditEnabled && $nextTs !== false && $nextTs <= $nowTs && ($snoozeTs === false || $snoozeTs <= $nowTs)) {
+        $showAuditAlert = true;
+        $auditScheduleText = date('F j, Y g:i A', $nextTs);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,6 +72,7 @@ $flash = get_flash();
             <a class="nav-link" href="<?= e(app_url('index.php')) ?>"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a>
             <a class="nav-link" href="<?= e(app_url('modules/items/index.php')) ?>"><i class="bi bi-archive me-1"></i>Items</a>
             <a class="nav-link" href="<?= e(app_url('modules/sales/index.php')) ?>"><i class="bi bi-receipt-cutoff me-1"></i>Sales</a>
+            <a class="nav-link" href="<?= e(app_url('modules/settings/index.php')) ?>"><i class="bi bi-gear me-1"></i>Settings</a>
         </div>
     </div>
 </nav>
@@ -65,4 +83,43 @@ $flash = get_flash();
             <i class="bi bi-info-circle me-1"></i><?= e($flash['message']) ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+    <?php endif; ?>
+
+    <?php if ($showAuditAlert): ?>
+        <div class="modal fade" id="auditReminderModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-clipboard2-check me-2"></i>Inventory Physical Audit Reminder</h5>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-2">Your scheduled physical inventory check is due.</p>
+                        <p class="mb-0 text-secondary small">Schedule: <?= e($auditScheduleText) ?></p>
+                    </div>
+                    <div class="modal-footer">
+                        <form method="POST" action="<?= e(app_url('modules/settings/index.php')) ?>" class="d-inline">
+                            <input type="hidden" name="action" value="snooze_audit">
+                            <button type="submit" class="btn btn-outline-secondary">Snooze 1 Minute</button>
+                        </form>
+                        <form method="POST" action="<?= e(app_url('modules/settings/index.php')) ?>" class="d-inline">
+                            <input type="hidden" name="action" value="complete_audit">
+                            <button type="submit" class="btn btn-primary">Check Now</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            const modalEl = document.getElementById('auditReminderModal');
+            if (!modalEl || !window.bootstrap) {
+                return;
+            }
+            const modal = new bootstrap.Modal(modalEl, {
+                backdrop: 'static',
+                keyboard: false
+            });
+            modal.show();
+        });
+        </script>
     <?php endif; ?>

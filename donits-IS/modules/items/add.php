@@ -11,20 +11,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($itemName === '') {
         set_flash('danger', 'Item name is required.');
     } else {
-        $stmt = $pdo->prepare(
-            'INSERT INTO items (item_name, price, sale_price, total_items, remaining)
-             VALUES (:item_name, :price, :sale_price, :total_items, :remaining)'
-        );
-        $stmt->execute([
-            'item_name' => $itemName,
-            'price' => $price,
-            'sale_price' => $salePrice,
-            'total_items' => $totalItems,
-            'remaining' => $remaining,
-        ]);
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare(
+                'INSERT INTO items (item_name, price, sale_price, total_items, remaining)
+                 VALUES (:item_name, :price, :sale_price, :total_items, :remaining)'
+            );
+            $stmt->execute([
+                'item_name' => $itemName,
+                'price' => $price,
+                'sale_price' => $salePrice,
+                'total_items' => $totalItems,
+                'remaining' => $remaining,
+            ]);
 
-        set_flash('success', 'Item added successfully.');
-        redirect('modules/items/index.php');
+            $newItemId = (int) $pdo->lastInsertId();
+            $purchaseExpense = max(0, $price * $totalItems);
+
+            if ($purchaseExpense > 0) {
+                $expenseStmt = $pdo->prepare(
+                    'INSERT INTO capital_expenses (amount, note, item_id)
+                     VALUES (:amount, :note, :item_id)'
+                );
+                $expenseStmt->execute([
+                    'amount' => $purchaseExpense,
+                    'note' => 'New item stock purchase: ' . $itemName,
+                    'item_id' => $newItemId,
+                ]);
+
+                $currentCapital = (float) get_setting($pdo, 'current_capital', '0');
+                set_setting($pdo, 'current_capital', (string) max(0, $currentCapital - $purchaseExpense));
+            }
+
+            $pdo->commit();
+            set_flash('success', 'Item added successfully. New item expense deducted from capital.');
+            redirect('modules/items/index.php');
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            set_flash('danger', 'Failed to add item.');
+        }
     }
 }
 
