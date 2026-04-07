@@ -1,4 +1,8 @@
-<?php $flash = get_flash(); ?>
+<?php
+require_once __DIR__ . '/functions.php';
+
+$flash = get_flash();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
