@@ -1,5 +1,5 @@
 <?php
-include '../../config/db.php';
+require_once __DIR__ . '/../../config/db.php';
 
 $search = trim($_GET['search'] ?? '');
 $page = max(1, (int) ($_GET['page'] ?? 1));
@@ -34,7 +34,7 @@ $listStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $listStmt->execute();
 $sales = $listStmt->fetchAll();
 
-include '../../includes/header.php';
+require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -95,4 +95,4 @@ include '../../includes/header.php';
 </ul>
 </nav>
 
-<?php include '../../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
