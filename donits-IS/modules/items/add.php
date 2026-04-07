@@ -39,7 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'item_id' => $newItemId,
                 ]);
 
-                sync_current_capital($pdo);
+                $currentCapital = (float) get_setting($pdo, 'current_capital', '0');
+                set_setting($pdo, 'current_capital', (string) max(0, $currentCapital - $purchaseExpense));
             }
 
             $pdo->commit();

@@ -119,14 +119,3 @@ function set_setting(PDO $pdo, string $key, string $value): void
         'setting_value' => $value,
     ]);
 }
-
-
-function sync_current_capital(PDO $pdo): float
-{
-    $capital = (float) get_setting($pdo, 'capital', '0');
-    $totalExpenses = (float) $pdo->query('SELECT COALESCE(SUM(amount), 0) FROM capital_expenses')->fetchColumn();
-    $current = max(0, $capital - $totalExpenses);
-    set_setting($pdo, 'current_capital', (string) $current);
-
-    return $current;
-}

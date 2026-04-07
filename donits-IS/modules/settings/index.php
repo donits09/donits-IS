@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save_capital') {
         $capital = max(0, (float) ($_POST['capital'] ?? 0));
         set_setting($pdo, 'capital', (string) $capital);
-        sync_current_capital($pdo);
+        set_setting($pdo, 'current_capital', (string) $capital);
         set_flash('success', 'Capital saved successfully.');
         redirect('modules/settings/index.php');
     }
@@ -15,55 +15,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'add_expense') {
         $expenseAmount = max(0, (float) ($_POST['expense_amount'] ?? 0));
         $expenseNote = trim($_POST['expense_note'] ?? 'Manual expense');
+        $currentCapital = (float) get_setting($pdo, 'current_capital', '0');
 
         if ($expenseAmount <= 0) {
             set_flash('danger', 'Expense amount must be greater than zero.');
             redirect('modules/settings/index.php');
         }
 
-        $expenseStmt = $pdo->prepare('INSERT INTO capital_expenses (amount, note) VALUES (:amount, :note)');
-        $expenseStmt->execute([
-            'amount' => $expenseAmount,
-            'note' => $expenseNote,
-        ]);
+        $pdo->beginTransaction();
+        try {
+            $expenseStmt = $pdo->prepare('INSERT INTO capital_expenses (amount, note) VALUES (:amount, :note)');
+            $expenseStmt->execute([
+                'amount' => $expenseAmount,
+                'note' => $expenseNote,
+            ]);
 
-        sync_current_capital($pdo);
-        set_flash('success', 'Expense recorded and deducted from capital.');
-        redirect('modules/settings/index.php');
-    }
-
-    if ($action === 'update_expense') {
-        $expenseId = (int) ($_POST['expense_id'] ?? 0);
-        $expenseAmount = max(0, (float) ($_POST['expense_amount'] ?? 0));
-        $expenseNote = trim($_POST['expense_note'] ?? 'Manual expense');
-
-        if ($expenseId <= 0 || $expenseAmount <= 0) {
-            set_flash('danger', 'Invalid expense update request.');
-            redirect('modules/settings/index.php');
-        }
-
-        $updateStmt = $pdo->prepare('UPDATE capital_expenses SET amount = :amount, note = :note WHERE id = :id');
-        $updateStmt->execute([
-            'amount' => $expenseAmount,
-            'note' => $expenseNote,
-            'id' => $expenseId,
-        ]);
-
-        sync_current_capital($pdo);
-        set_flash('success', 'Expense updated successfully.');
-        redirect('modules/settings/index.php');
-    }
-
-    if ($action === 'delete_expense') {
-        $expenseId = (int) ($_POST['expense_id'] ?? 0);
-
-        if ($expenseId > 0) {
-            $deleteStmt = $pdo->prepare('DELETE FROM capital_expenses WHERE id = :id');
-            $deleteStmt->execute(['id' => $expenseId]);
-            sync_current_capital($pdo);
-            set_flash('success', 'Expense deleted successfully.');
-        } else {
-            set_flash('danger', 'Invalid expense delete request.');
+            set_setting($pdo, 'current_capital', (string) max(0, $currentCapital - $expenseAmount));
+            $pdo->commit();
+            set_flash('success', 'Expense recorded and deducted from capital.');
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            set_flash('danger', 'Unable to save expense.');
         }
 
         redirect('modules/settings/index.php');
@@ -118,16 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$editExpenseId = (int) ($_GET['edit_expense_id'] ?? 0);
-$editExpense = null;
-if ($editExpenseId > 0) {
-    $editStmt = $pdo->prepare('SELECT * FROM capital_expenses WHERE id = :id LIMIT 1');
-    $editStmt->execute(['id' => $editExpenseId]);
-    $editExpense = $editStmt->fetch();
-}
-
 $capital = (float) get_setting($pdo, 'capital', '0');
-$currentCapital = sync_current_capital($pdo);
+$currentCapital = (float) get_setting($pdo, 'current_capital', '0');
 $auditEnabled = get_setting($pdo, 'audit_enabled', '0') === '1';
 $auditNextAt = get_setting($pdo, 'audit_next_at', '');
 $auditRecurrenceDays = (int) get_setting($pdo, 'audit_recurrence_days', '7');
@@ -141,7 +105,7 @@ if ($auditNextAt !== '') {
 }
 
 $totalExpenses = (float) $pdo->query('SELECT COALESCE(SUM(amount), 0) FROM capital_expenses')->fetchColumn();
-$expenseRows = $pdo->query('SELECT * FROM capital_expenses ORDER BY created_at DESC LIMIT 30')->fetchAll();
+$expenseRows = $pdo->query('SELECT * FROM capital_expenses ORDER BY created_at DESC LIMIT 15')->fetchAll();
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -162,7 +126,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="col-12">
                         <label class="form-label">Set Capital</label>
                         <input type="number" class="form-control" name="capital" min="0" step="0.01" value="<?= e((string) $capital) ?>" required>
-                        <small class="text-secondary">Current capital is auto-computed as capital minus total expenses.</small>
+                        <small class="text-secondary">This resets current capital to the same value.</small>
                     </div>
                     <div class="col-12">
                         <button class="btn btn-primary">Save Capital</button>
@@ -170,23 +134,17 @@ require_once __DIR__ . '/../../includes/header.php';
                 </form>
 
                 <form method="POST" class="row g-3">
-                    <input type="hidden" name="action" value="<?= $editExpense ? 'update_expense' : 'add_expense' ?>">
-                    <?php if ($editExpense): ?>
-                        <input type="hidden" name="expense_id" value="<?= (int) $editExpense['id'] ?>">
-                    <?php endif; ?>
+                    <input type="hidden" name="action" value="add_expense">
                     <div class="col-md-5">
-                        <label class="form-label"><?= $editExpense ? 'Edit Expense Amount' : 'Expense Amount' ?></label>
-                        <input type="number" class="form-control" name="expense_amount" min="0" step="0.01" value="<?= e((string) ($editExpense['amount'] ?? '')) ?>" required>
+                        <label class="form-label">Expense Amount</label>
+                        <input type="number" class="form-control" name="expense_amount" min="0" step="0.01" required>
                     </div>
                     <div class="col-md-7">
                         <label class="form-label">Note</label>
-                        <input type="text" class="form-control" name="expense_note" value="<?= e((string) ($editExpense['note'] ?? '')) ?>" placeholder="e.g. shelves, packaging, etc.">
+                        <input type="text" class="form-control" name="expense_note" placeholder="e.g. shelves, packaging, etc.">
                     </div>
-                    <div class="col-12 d-flex gap-2">
-                        <button class="btn btn-outline-primary"><?= $editExpense ? 'Update Expense' : 'Add Expense' ?></button>
-                        <?php if ($editExpense): ?>
-                            <a href="<?= e(app_url('modules/settings/index.php')) ?>" class="btn btn-secondary">Cancel Edit</a>
-                        <?php endif; ?>
+                    <div class="col-12">
+                        <button class="btn btn-outline-primary">Add Expense</button>
                     </div>
                 </form>
             </div>
@@ -231,26 +189,17 @@ require_once __DIR__ . '/../../includes/header.php';
                         <th>Date</th>
                         <th>Amount</th>
                         <th>Note</th>
-                        <th width="180">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!$expenseRows): ?>
-                        <tr><td colspan="4" class="text-center">No expenses yet.</td></tr>
+                        <tr><td colspan="3" class="text-center">No expenses yet.</td></tr>
                     <?php else: ?>
                         <?php foreach ($expenseRows as $expense): ?>
                             <tr>
                                 <td><?= e($expense['created_at']) ?></td>
                                 <td><?= e(format_currency((float) $expense['amount'])) ?></td>
                                 <td><?= e($expense['note'] ?? '') ?></td>
-                                <td>
-                                    <a class="btn btn-sm btn-warning" href="<?= e(app_url('modules/settings/index.php?edit_expense_id=' . (int) $expense['id'])) ?>">Edit</a>
-                                    <form method="POST" class="d-inline" onsubmit="return confirm('Delete this expense?');">
-                                        <input type="hidden" name="action" value="delete_expense">
-                                        <input type="hidden" name="expense_id" value="<?= (int) $expense['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                    </form>
-                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
