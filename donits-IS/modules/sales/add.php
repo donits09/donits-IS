@@ -50,26 +50,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
-<h3>Add Sale</h3>
-<form method="POST" class="row g-3">
-    <div class="col-md-6">
-        <label class="form-label">Item</label>
-        <select name="item_id" class="form-select" required>
-            <option value="">Select Item</option>
-            <?php foreach ($items as $item): ?>
-                <option value="<?= (int) $item['id'] ?>" data-sale-price="<?= e((string) $item['sale_price']) ?>">
-                    <?= e($item['item_name']) ?> (Remaining: <?= (int) $item['remaining'] ?>)
-                </option>
-            <?php endforeach; ?>
-        </select>
+<div class="card app-card mx-auto" style="max-width: 950px;">
+    <div class="card-body p-4">
+        <h3 class="section-title mb-3"><i class="bi bi-plus-square me-2"></i>Add Sale</h3>
+        <form method="POST" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Item</label>
+                <select name="item_id" class="form-select" required>
+                    <option value="">Select Item</option>
+                    <?php foreach ($items as $item): ?>
+                        <option value="<?= (int) $item['id'] ?>" data-sale-price="<?= e((string) $item['sale_price']) ?>">
+                            <?= e($item['item_name']) ?> (Remaining: <?= (int) $item['remaining'] ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-3"><label class="form-label">Quantity</label><input class="form-control" type="number" name="quantity" min="1" value="1" required></div>
+            <div class="col-md-3"><label class="form-label">Sold Price</label><input id="soldPrice" class="form-control" type="number" step="0.01" min="0" name="sold_price" required></div>
+            <div class="col-12 d-flex gap-2">
+                <button class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Save</button>
+                <a href="<?= e(app_url('modules/sales/index.php')) ?>" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
     </div>
-    <div class="col-md-3"><label class="form-label">Quantity</label><input class="form-control" type="number" name="quantity" min="1" value="1" required></div>
-    <div class="col-md-3"><label class="form-label">Sold Price</label><input id="soldPrice" class="form-control" type="number" step="0.01" min="0" name="sold_price" required></div>
-    <div class="col-12">
-        <button class="btn btn-primary">Save</button>
-        <a href="<?= e(app_url('modules/sales/index.php')) ?>" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+</div>
 
 <script>
 const itemSelect = document.querySelector('select[name="item_id"]');

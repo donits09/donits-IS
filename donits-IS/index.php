@@ -5,6 +5,8 @@ $totalSales = (float) ($pdo->query('SELECT COALESCE(SUM(total_amount), 0) FROM s
 $totalProfit = (float) ($pdo->query('SELECT COALESCE(SUM(interest), 0) FROM sales')->fetchColumn());
 $totalItems = (int) ($pdo->query('SELECT COUNT(*) FROM items')->fetchColumn());
 $totalStocks = (int) ($pdo->query('SELECT COALESCE(SUM(remaining), 0) FROM items')->fetchColumn());
+$totalInventoryCost = (float) ($pdo->query('SELECT COALESCE(SUM(price * remaining), 0) FROM items')->fetchColumn());
+$lowStockItems = (int) ($pdo->query('SELECT COUNT(*) FROM items WHERE remaining BETWEEN 1 AND 5')->fetchColumn());
 
 $salesByDayStmt = $pdo->query(
     'SELECT DATE(created_at) AS sale_date, COALESCE(SUM(total_amount), 0) AS amount
@@ -21,16 +23,35 @@ $amounts = array_map(static fn($row) => (float) $row['amount'], $salesByDay);
 include 'includes/header.php';
 ?>
 
-<div class="row g-3 mb-3">
-    <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Sales</h6><h4><?= number_format($totalSales, 2) ?></h4></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Profit</h6><h4><?= number_format($totalProfit, 2) ?></h4></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Item Types</h6><h4><?= number_format($totalItems) ?></h4></div></div></div>
-    <div class="col-md-3"><div class="card"><div class="card-body"><h6>Total Remaining Stocks</h6><h4><?= number_format($totalStocks) ?></h4></div></div></div>
+<div class="row g-3 mb-4">
+    <div class="col-md-6 col-xl-3"><div class="card app-card h-100"><div class="card-body"><p class="text-secondary mb-2"><i class="bi bi-cash-coin me-1"></i>Total Sales</p><h4 class="mb-0"><?= e(format_currency($totalSales)) ?></h4></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card app-card h-100"><div class="card-body"><p class="text-secondary mb-2"><i class="bi bi-graph-up-arrow me-1"></i>Total Profit</p><h4 class="mb-0"><?= e(format_currency($totalProfit)) ?></h4></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card app-card h-100"><div class="card-body"><p class="text-secondary mb-2"><i class="bi bi-box-seam me-1"></i>Item Types</p><h4 class="mb-0"><?= number_format($totalItems) ?></h4></div></div></div>
+    <div class="col-md-6 col-xl-3"><div class="card app-card h-100"><div class="card-body"><p class="text-secondary mb-2"><i class="bi bi-stack me-1"></i>Remaining Stocks</p><h4 class="mb-0"><?= number_format($totalStocks) ?></h4></div></div></div>
 </div>
 
-<div class="card">
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card app-card h-100">
+            <div class="card-body">
+                <h5 class="section-title"><i class="bi bi-bank me-2"></i>Inventory Cost on Hand</h5>
+                <p class="display-6 mb-0"><?= e(format_currency($totalInventoryCost)) ?></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card app-card h-100">
+            <div class="card-body">
+                <h5 class="section-title"><i class="bi bi-exclamation-triangle me-2"></i>Low Stock Alerts</h5>
+                <p class="display-6 mb-0"><?= number_format($lowStockItems) ?></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card app-card">
     <div class="card-body">
-        <h5 class="card-title">Sales (Last 14 Days)</h5>
+        <h5 class="section-title"><i class="bi bi-bar-chart-line me-2"></i>Sales (Last 14 Days)</h5>
         <canvas id="salesChart" height="100"></canvas>
     </div>
 </div>
@@ -44,9 +65,9 @@ new Chart(document.getElementById('salesChart'), {
         datasets: [{
             label: 'Sales Amount',
             data: <?= json_encode($amounts) ?>,
-            borderColor: '#198754',
-            backgroundColor: 'rgba(25, 135, 84, 0.2)',
-            tension: 0.2,
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79, 70, 229, 0.18)',
+            tension: 0.25,
             fill: true
         }]
     },
