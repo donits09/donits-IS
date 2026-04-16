@@ -10,6 +10,7 @@ $lowStockItems = (int) ($pdo->query('SELECT COUNT(*) FROM items WHERE remaining 
 
 $initialCapital = (float) get_setting($pdo, 'capital', '0');
 $currentCapital = (float) get_setting($pdo, 'current_capital', '0');
+$basketAmount = $totalSales + $currentCapital;
 $totalExpenses = (float) ($pdo->query('SELECT COALESCE(SUM(amount), 0) FROM capital_expenses')->fetchColumn());
 
 $salesByDayStmt = $pdo->query(
@@ -46,8 +47,8 @@ include 'includes/header.php';
     <div class="col-md-6">
         <div class="card app-card h-100">
             <div class="card-body">
-                <h5 class="section-title"><i class="bi bi-exclamation-triangle me-2"></i>Low Stock Alerts</h5>
-                <p class="display-6 mb-0"><?= number_format($lowStockItems) ?></p>
+                <h5 class="section-title"><i class="bi bi-basket3 me-2"></i>Basket Amount</h5>
+                <p class="display-6 mb-0"><?= e(format_currency($basketAmount)) ?></p>
             </div>
         </div>
     </div>
